@@ -15,7 +15,7 @@ fn main() {
                 ..Default::default()
             }
         ))
-        .add_plugins(grid::GridPlugin)
+        .add_plugins(systems::TetrisPlugin)
         //.add_systems(Startup, setup)
         .run();
 }
