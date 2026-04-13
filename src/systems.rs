@@ -26,42 +26,56 @@ fn tick(
     mut timer: ResMut<TetrisTimer>,
     mut block_query: Query<(Entity, &mut Block), With<Active>>,
     mut grid: ResMut<Grid>,
+    mut check_lines_message_writer: MessageWriter<CheckLinesMessage>,
+    mut redraw_grid_event: MessageWriter<RedrawGridMessage>,
 ) {
     timer.0.tick(time.delta());
     if !timer.0.just_finished() {
         return;
     }
 
-    // if activated block exists, pull down,
+    // if activated block exists, pull down. if it reached bottommost, deactivate
     // else, create new one
     if let Ok((entity, mut block)) = block_query.single_mut() {
         let is_crash = block.next_occupancy((-1, 0)).iter()
             .any(|&(row, col)| grid.is_occupied(row, col));
 
         if is_crash {
-            for (row, col) in block.next_occupancy((0, 0)) {
-                if row >= GRID_ROWS as isize { continue; }
-                grid.cells[row as usize][col as usize] = CellState::Filled(block.get_color());
+            for i in 0..4 {
+                for j in 0..4 {
+                    if block.shape[i][j] == false { continue }
+                    
+                    let row = block.position.0 + i as isize;
+                    let col = block.position.1 + j as isize;
+                    //todo: if row >= GRID_ROWS then send GameOverMessage
+                    if row as usize >= GRID_ROWS { 
+                        println!("game over!!");
+                        continue
+                    }
+                    grid.cells[row as usize][col as usize] = CellState::Filled(block.get_color());
+                }
             }
             commands.entity(entity).despawn();
+            check_lines_message_writer.write(CheckLinesMessage);
         } else {
             block.position.0 -= 1;
+            redraw_grid_event.write(RedrawGridMessage);
         }
     } else {
         commands.spawn((
             Block::new(rand::rng().sample(StandardUniform)),
             Active,
         ));
-    }
 
+        println!("create new block");
+    }
 }
 fn handle_keyboard_input(
     //commands: Commands,
     mut block_query: Query<(Entity, &mut Block), With<Active>>,
-    grid: Res<Grid>,
+    grid: ResMut<Grid>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    //mut redraw_grid_message_writer: MessageWriter<RedrawGridMessage>
-    mut check_lines_message_writer: MessageWriter<CheckLinesMessage>
+    mut redraw_grid_event: MessageWriter<RedrawGridMessage>,
 ) {
     let (_entity, mut block) = match block_query.iter_mut().next() {
         Some(eb) => eb,
@@ -75,15 +89,13 @@ fn handle_keyboard_input(
                 while block
                     .next_occupancy(delta)
                     .iter()
-                    .all(|&(row, col)| {
-                        row >= 0 
-                        && grid.cells.get(row as usize).unwrap().get(col as usize).unwrap() == &CellState::Empty
-                    })
+                    .all(|&(row, col)| !grid.is_occupied(row, col))
                 {
                     block.move_delta(delta);
                 }
             },
             KeyCode::ArrowUp => {
+                //todo: handle when rotating goes out coordinate
                 block.rotate();
             },
             KeyCode::ArrowLeft => {
@@ -114,11 +126,8 @@ fn handle_keyboard_input(
         }
     }
 
-    check_lines_message_writer.write(CheckLinesMessage);
+    redraw_grid_event.write(RedrawGridMessage);
 }
-
-#[derive(Message)]
-struct CheckLinesMessage;
 
 fn check_lines(
     mut grid: ResMut<Grid>,

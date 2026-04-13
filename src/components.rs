@@ -7,10 +7,14 @@ use rand::{
 pub const GRID_COLS: usize = 10;
 pub const GRID_ROWS: usize = 20;
 pub const GRID_HIDDEN_ROWS: usize = 6;
-pub const GRID_CELL_SIZE: f32 = 40.0;
+pub const GRID_CELL_SIZE: f32 = 20.0;
 
 #[derive(Message)]
 pub struct RedrawGridMessage;
+#[derive(Message)]
+pub struct DeactivateBlockMessage;
+#[derive(Message)]
+pub struct CheckLinesMessage;
 
 #[derive(Resource)]
 pub struct Grid {
@@ -22,17 +26,16 @@ impl Grid {
     pub fn new() -> Self {
         Self {
             //cells: vec![CellState::Empty; GRID_COLS * (GRID_ROWS + GRID_HIDDEN_ROWS)],
-            cells: vec![vec![CellState::Empty; GRID_COLS]; GRID_ROWS + GRID_HIDDEN_ROWS],
-            x: -(GRID_ROWS as f32 * GRID_CELL_SIZE) / 2.0,
-            y: -(GRID_COLS as f32 * GRID_CELL_SIZE) / 2.0,
+            cells: vec![vec![CellState::Empty; GRID_COLS]; GRID_ROWS],
+            x: -(GRID_COLS as f32 * GRID_CELL_SIZE) / 2.0,
+            y: -(GRID_ROWS as f32 * GRID_CELL_SIZE) / 2.0,
         }
     }
     pub fn is_occupied(&self, row: isize, col: isize) -> bool {
         row < 0
-        || row >= GRID_ROWS as isize
         || col < 0
         || col >= GRID_COLS as isize
-        || self.cells.get(row as usize).unwrap().get(col as usize).unwrap() != &CellState::Empty
+        || (row < GRID_ROWS as isize && self.cells.get(row as usize).unwrap().get(col as usize).unwrap() != &CellState::Empty)
     }
 }
 #[derive(Component)]
@@ -170,7 +173,8 @@ impl Block {
 
         for i in 0..4 {
             for j in 0..4 {
-                re.push((row+i+delta.0, col+j+delta.1));
+                if self.shape[i][j] == false { continue }
+                re.push((row + i as isize + delta.0, col + j as isize + delta.1));
             }
         }
 
