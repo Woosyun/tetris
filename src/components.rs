@@ -12,8 +12,6 @@ pub const GRID_CELL_SIZE: f32 = 20.0;
 #[derive(Message)]
 pub struct RedrawGridMessage;
 #[derive(Message)]
-pub struct DeactivateBlockMessage;
-#[derive(Message)]
 pub struct CheckLinesMessage;
 
 #[derive(Resource)]

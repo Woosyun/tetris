@@ -1,2 +1,9 @@
 # Tetris
-- bevy 0.17.3
+
+## ECS-wise thinking
+<img src="etc/architecture.png">
+
+### how to run
+```rust
+cargo run
+```
