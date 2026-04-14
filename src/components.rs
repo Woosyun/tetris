@@ -49,7 +49,7 @@ pub enum CellState {
 #[derive(Component)]
 pub struct Active;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Block {
     pub shape: [[bool; 4]; 4],
     pub letter: BlockLetter,
@@ -125,46 +125,46 @@ impl Block {
     }
 
     pub fn rotate(&mut self) {
+        let mut re = [[false; 4]; 4];
         for i in 0..4 {
-            for j in (i+1)..4 {
-                let tmp = self.shape[i][j];
-                self.shape[i][j] = self.shape[j][i];
-                self.shape[j][i] = tmp;
+            for j in 0..4 {
+                re[i][j] = self.shape[j][3-i];
             }
         }
 
-        self.shape.reverse();
-    }
-
-    pub fn clear_row(&mut self, row: usize) {
-        assert!(row < 4);
-
-        for col in 0..4 {
-            self.shape[row][col] = false;
+        let mut leftmost_idx = 3;
+        let mut bottommost_idx = 3;
+        for i in 0..4 {
+            for j in 0..4 {
+                if !re[i][j] { continue }
+                if leftmost_idx > j {
+                    leftmost_idx = j;
+                }
+                if bottommost_idx > i {
+                    bottommost_idx = i;
+                }
+            }
+        }
+        for i in 0..4 {
+            for j in 0..4 {
+                if i < 4 - bottommost_idx && j < 4 - leftmost_idx {
+                    re[i][j] = re[i+bottommost_idx][j+leftmost_idx];
+                } else {
+                    re[i][j] = false;
+                }
+            }
         }
 
-        for _ in row..3 {
-            self.shape[row] = self.shape[row+1];
-        }
-        self.shape[3] = [false, false, false, false];
+        self.shape = re;
     }
 
     pub fn move_delta(&mut self, delta: (isize, isize)) {
         match delta {
-            (0, 1) => self.move_right(),
-            (-1, 0) => self.move_down(),
-            (0, -1) => self.move_left(),
+            (0, 1) => self.position.1 += 1,
+            (-1, 0) => self.position.0 -= 1,
+            (0, -1) => self.position.1 -= 1,
             _ => panic!("illegal movement: {:?}", delta)
         }
-    }
-    fn move_down(&mut self) {
-        self.position.0 -= 1;
-    }
-    fn move_left(&mut self) {
-        self.position.1 -= 1;
-    }
-    fn move_right(&mut self) {
-        self.position.1 += 1;
     }
 
     pub fn next_occupancy(&self, delta: (isize, isize)) -> Vec<(isize, isize)> {
@@ -179,16 +179,6 @@ impl Block {
         }
 
         re
-    }
-
-    pub fn empty(&self) -> bool {
-        !self.shape.iter()
-            .find(|&row| {
-                row.iter()
-                    .find(|&&el| el)
-                    .is_some()
-            })
-            .is_some()
     }
 }
 

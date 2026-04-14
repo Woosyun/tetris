@@ -57,6 +57,10 @@ fn tick(
             }
             commands.entity(entity).despawn();
             check_lines_message_writer.write(CheckLinesMessage);
+            commands.spawn((
+                Block::new(rand::rng().sample(StandardUniform)),
+                Active,
+            ));
         } else {
             block.position.0 -= 1;
             redraw_grid_event.write(RedrawGridMessage);
@@ -95,8 +99,17 @@ fn handle_keyboard_input(
                 }
             },
             KeyCode::ArrowUp => {
-                //todo: handle when rotating goes out coordinate
-                block.rotate();
+                //todo: if conflict can be resolved by moving block, not shape,
+                //      move block to make it.
+                
+                let mut temp_block = block.clone();
+                temp_block.rotate();
+                let conflict = temp_block.next_occupancy((0, 0))
+                    .iter()
+                    .any(|&(row, col)| grid.is_occupied(row, col));
+                if !conflict {
+                    block.rotate();
+                }
             },
             KeyCode::ArrowLeft => {
                 let conflict = block.next_occupancy((0, -1))
