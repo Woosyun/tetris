@@ -208,6 +208,6 @@ impl Distribution<BlockLetter> for StandardUniform {
 pub struct TetrisTimer(pub Timer);
 impl TetrisTimer {
     pub fn new() -> Self {
-        Self(Timer::new(std::time::Duration::new(1, 0), TimerMode::Repeating))
+        Self(Timer::new(std::time::Duration::from_millis(700), TimerMode::Repeating))
     }
 }

@@ -1,7 +1,8 @@
 # Tetris
+<img src="etc/play1.png" />
 
-## ECS-wise thinking
-<img src="etc/architecture.png">
+## ECS
+<img src="etc/architecture.png" />
 
 ### how to run
 ```rust
